@@ -16,7 +16,7 @@ import java.util.Optional;
 @CrossOrigin(origins = "http://localhost:4200")
 @Transactional
 @RestController
-@RequestMapping("/api/loai-dich-vu")
+@RequestMapping("/api/loai-dich-vu" )
 public class LoaiDichVuController {
     @Autowired
     private LoaiDichVuRepository loaiDichVuRepository;

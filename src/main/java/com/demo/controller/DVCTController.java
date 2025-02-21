@@ -16,7 +16,7 @@ import java.util.Optional;
 @CrossOrigin(origins = "http://localhost:4200")
 @Transactional
 @RestController
-@RequestMapping("/api/dich-vu-chi-tiet")
+@RequestMapping("/api/dich-vu-chi-tiet" )
 public class DVCTController {
     @Autowired
     private DVCTRepository dichVuChiTietRepository;

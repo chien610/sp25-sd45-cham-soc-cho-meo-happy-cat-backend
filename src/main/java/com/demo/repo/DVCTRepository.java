@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface DVCTRepository extends JpaRepository<DichVuChiTiet,Integer> {
+public interface DVCTRepository extends JpaRepository<DichVuChiTiet, Integer> {
     List<DichVuChiTiet> findByTenDichVuContainingIgnoreCase(String name);
     Page<DichVuChiTiet> findAll(Pageable pageable);
 }

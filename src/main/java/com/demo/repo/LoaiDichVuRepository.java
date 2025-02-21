@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface LoaiDichVuRepository extends JpaRepository<LoaiDichVu, Integer> {
+public interface LoaiDichVuRepository extends JpaRepository<LoaiDichVu,Integer> {
     List<LoaiDichVu> findByTenLoaiDichVuContainingIgnoreCase(String name);
     Page<LoaiDichVu> findAll(Pageable pageable);
 }
