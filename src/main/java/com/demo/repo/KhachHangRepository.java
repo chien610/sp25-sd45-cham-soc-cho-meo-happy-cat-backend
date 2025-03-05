@@ -21,6 +21,8 @@ public interface KhachHangRepository extends JpaRepository<KhachHang,Integer> {
 
     Page<KhachHang> findByTenKhachHangContainingOrSoDienThoaiContainingAndGioiTinhAndXoa(String tenKhachHang, String soDienThoai, String gioiTinh, Integer xoa, Pageable pageable);
 
+    Optional<KhachHang> findBySoDienThoai(String soDienThoai);
+
     @Query("SELECT k FROM KhachHang k WHERE k.xoa = 0")
     Page<KhachHang> findAllActive(Pageable pageable);
 }
