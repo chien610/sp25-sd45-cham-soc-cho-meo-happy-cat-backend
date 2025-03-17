@@ -38,4 +38,8 @@ public class LichDat {
     @ManyToOne
     @JoinColumn(name = "thu_cung_id")
     private ThuCung thuCung;
+
+    @ManyToOne
+    @JoinColumn(name = "nhan_vien_id")
+    private NhanVien nhanVien;
 }
