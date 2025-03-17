@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public interface LichDatRepository extends JpaRepository<LichDat,Long> {
     @Query("SELECT new com.demo.dto.LichDatRequest(" +
@@ -18,16 +19,16 @@ public interface LichDatRepository extends JpaRepository<LichDat,Long> {
             "JOIN ld.khachHang kh " +
             "JOIN ld.thuCung tc " +
             "JOIN ld.dichVuChiTiet dv " +
-            "WHERE (:search IS NULL OR kh.tenKhachHang LIKE CONCAT('%', :search, '%') OR kh.soDienThoai LIKE CONCAT('%', :search, '%')) " +
-            "AND ld.xoaLich = :xoa " +
-            "AND (:ngayDat IS NULL OR ld.ngayDat = :ngayDat) " + // Nếu không truyền ngày thì bỏ qua điều kiện này
+            "WHERE ld.nhanVien.id IS NOT NULL " +  // Chỉ lấy bản ghi có nhân viên
+            "AND (:search IS NULL OR :search = '' OR kh.tenKhachHang LIKE %:search% OR kh.soDienThoai LIKE %:search%) " +
+            "AND (:ngayDat IS NULL OR ld.ngayDat = :ngayDat) " +
             "ORDER BY ld.gioDat ASC"
     )
-    Page<LichDatRequest> findByKhachHangTenContainingOrKhachHangSoDienThoaiContainingAndXoaAndNgayDat(
+    Page<LichDatRequest> findLichDatBySearchAndNgayDatAndNhanVienIdNotNull(
             @Param("search") String search,
-            @Param("xoa") Integer xoa,
-            @Param("ngayDat") LocalDate ngayDat,  // Có thể null
+            @Param("ngayDat") LocalDate ngayDat,
             Pageable pageable);
+
 
     @Query("SELECT new com.demo.dto.LichDatRequest(" +
             "kh.tenKhachHang, kh.soDienThoai, kh.email, tc.tenThuCung, " +
@@ -36,13 +37,15 @@ public interface LichDatRepository extends JpaRepository<LichDat,Long> {
             "JOIN ld.khachHang kh " +
             "JOIN ld.thuCung tc " +
             "JOIN ld.dichVuChiTiet dv " +
-            "WHERE ld.xoaLich = :xoa " +
-            "AND (:ngayDat IS NULL OR ld.ngayDat = :ngayDat) " + // Nếu không truyền ngày thì bỏ qua điều kiện này
+            "WHERE ld.nhanVien.id IS NULL " +  // Chỉ lấy lịch chưa phân công nhân viên
+            "AND (:soDienThoai IS NULL OR kh.soDienThoai LIKE %:soDienThoai%) " +
+            "AND (:ngayDat IS NULL OR ld.ngayDat = :ngayDat) " +
             "ORDER BY ld.gioDat ASC"
     )
-    Page<LichDatRequest> findAllByXoaAndNgayDat(
-            @Param("xoa") Integer xoa,
-            @Param("ngayDat") LocalDate ngayDat,  // Có thể null
-            Pageable pageable);
+    Page<LichDatRequest> findLichDatChuaPhanCong(
+            @Param("soDienThoai") String soDienThoai,
+            @Param("ngayDat") LocalDate ngayDat,
+            Pageable pageable
+    );
 
 }

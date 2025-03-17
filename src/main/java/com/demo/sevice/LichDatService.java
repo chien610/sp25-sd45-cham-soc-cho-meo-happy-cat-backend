@@ -1,27 +1,22 @@
 package com.demo.sevice;
 
 import com.demo.dto.LichDatRequest;
-import com.demo.entity.DichVuChiTiet;
-import com.demo.entity.KhachHang;
-import com.demo.entity.LichDat;
-import com.demo.entity.ThuCung;
-import com.demo.repo.DichVuChiTietRepository;
-import com.demo.repo.KhachHangRepository;
-import com.demo.repo.LichDatRepository;
-import com.demo.repo.ThuCungRepository;
+import com.demo.entity.*;
+import com.demo.repo.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,6 +33,17 @@ public class LichDatService {
 
     @Autowired
     private LichDatRepository lichDatRepository;
+
+    @Autowired
+    private NhanVienRepository nhanVienRepository;
+
+    @Autowired
+    private CaLamRepository caLamRepository;
+
+    @Autowired
+    private PhanCongRepository phanCongRepository;
+    @Autowired
+    private EmailService emailService;
 
     @Transactional
     public void themMoiLichDat(LichDatRequest request) {
@@ -86,15 +92,7 @@ public class LichDatService {
 
 
 
-    public Page<LichDatRequest> getLichDatList(int page, int size, String search, int xoa, LocalDate ngayDat) {
-        Pageable pageable = PageRequest.of(page, size);
-        if (search != null && !search.isEmpty()) {
-            return lichDatRepository.findByKhachHangTenContainingOrKhachHangSoDienThoaiContainingAndXoaAndNgayDat(
-                    search, xoa, ngayDat, pageable);
-        }
 
-        return lichDatRepository.findAllByXoaAndNgayDat(xoa, ngayDat, pageable);
-    }
 
 
     @Transactional
@@ -176,6 +174,97 @@ public class LichDatService {
 
         // Lưu thay đổi
         lichDatRepository.save(lichDat);
+    }
+
+
+    public Page<LichDatRequest> layLichDatChuaPhanCong(int page, int size, String soDienThoai, LocalDate ngayDat) {
+        Pageable pageable = PageRequest.of(page, size);
+        return lichDatRepository.findLichDatChuaPhanCong(
+                soDienThoai != null ? soDienThoai.trim() : null,
+                ngayDat,
+                pageable
+        );
+    }
+
+
+    public List<NhanVien> laydsNhanVien() {
+        return nhanVienRepository.findAll();
+    }
+    public List<CaLam> laydsCaLam() {
+        return caLamRepository.findAll();
+    }
+    @Transactional
+    public ResponseEntity<String> xacNhanLichDat(Long lichDatId, Integer nhanVienId, List<Long> caLamIds, LocalDate ngayDat) {
+        try {
+            LichDat lichDat = lichDatRepository.findById(lichDatId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy lịch đặt với ID: " + lichDatId));
+
+            NhanVien nhanVien = nhanVienRepository.findById(nhanVienId)
+                    .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với ID: " + nhanVienId));
+
+            // Lưu danh sách các ca làm
+            List<PhanCong> danhSachPhanCong = new ArrayList<>();
+            for (Long caLamId : caLamIds) {
+                CaLam caLam = caLamRepository.findById(caLamId)
+                        .orElseThrow(() -> new RuntimeException("Không tìm thấy ca làm với ID: " + caLamId));
+
+                // Kiểm tra nhân viên có bị trùng lịch không
+                int count = phanCongRepository.countPhanCongTrung(nhanVienId, caLamId, ngayDat);
+                if (count > 0) {
+                    return ResponseEntity.badRequest().body("Nhân viên đã có lịch trong ca " + caLam.getTenCa());
+                }
+
+                PhanCong phanCong = new PhanCong();
+                phanCong.setLichDat(lichDat);
+                phanCong.setNhanVien(nhanVien);
+                phanCong.setCaLam(caLam);
+                phanCong.setNgayDat(ngayDat);
+                danhSachPhanCong.add(phanCong);
+            }
+
+            // Lưu tất cả phân công vào DB
+            phanCongRepository.saveAll(danhSachPhanCong);
+
+            // Cập nhật nhân viên cho lịch đặt
+            lichDat.setNhanVien(nhanVien);
+            lichDatRepository.save(lichDat);
+
+            // Lấy email khách hàng từ lịch đặt
+            String emailKhachHang = lichDat.getKhachHang().getEmail();
+
+            // Tạo nội dung email
+            StringBuilder caLamStr = new StringBuilder();
+            for (Long caLamId : caLamIds) {
+                CaLam caLam = caLamRepository.findById(caLamId).orElse(null);
+                if (caLam != null) {
+                    caLamStr.append("⏳ ").append(caLam.getTenCa()).append("\n");
+                }
+            }
+
+            String subject = "Xác nhận lịch đặt thành công!";
+            String body = "Chào " + lichDat.getKhachHang().getTenKhachHang() + ",\n\n"
+                    + "Lịch đặt của bạn đã được xác nhận thành công.\n"
+                    + "📅 Ngày: " + ngayDat + "\n"
+                    + caLamStr
+                    + "Dịch vụ: " + lichDat.getDichVuChiTiet().getTenDichVu() + "\n"
+                    + "👨‍💼 Nhân viên: " + nhanVien.getTenNhanVien() + "\n"
+                    + "Cảm ơn bạn đã sử dụng dịch vụ!";
+
+            emailService.sendEmail(emailKhachHang, subject, body);
+
+            return ResponseEntity.ok("Xác nhận lịch đặt thành công!");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi server: " + e.getMessage());
+        }
+    }
+
+
+    public Page<LichDatRequest> getLichDatList(int page, int size, String search, LocalDate ngayDat) {
+        Pageable pageable = PageRequest.of(page, size);
+
+        return lichDatRepository.findLichDatBySearchAndNgayDatAndNhanVienIdNotNull(search != null ? search.trim() : null, ngayDat, pageable);
     }
 
 

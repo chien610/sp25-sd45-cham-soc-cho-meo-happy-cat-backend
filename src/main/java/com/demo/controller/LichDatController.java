@@ -1,7 +1,11 @@
 package com.demo.controller;
 
 import com.demo.dto.LichDatRequest;
+import com.demo.dto.XacNhanLichDatRequest;
+import com.demo.entity.CaLam;
 import com.demo.entity.DichVuChiTiet;
+import com.demo.entity.LichDat;
+import com.demo.entity.NhanVien;
 import com.demo.sevice.LichDatService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +34,9 @@ public class LichDatController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
             @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int xoaLich,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayDat) {
 
-        return lichDatService.getLichDatList(page, size, search, xoaLich, ngayDat);
+        return lichDatService.getLichDatList(page, size, search, ngayDat);
     }
 
 
@@ -77,5 +80,39 @@ public class LichDatController {
         lichDatService.capNhatXoaLich(id, xoaLich);
         return ResponseEntity.ok("Cập nhật xóa lịch thành công!");
     }
+
+    @GetMapping("/chua-phan-cong")
+    public ResponseEntity<Page<LichDatRequest>> layLichDatChuaPhanCong(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String soDienThoai,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate ngayDat) {
+
+        Page<LichDatRequest> danhSach = lichDatService.layLichDatChuaPhanCong(page, size, soDienThoai, ngayDat);
+        return ResponseEntity.ok(danhSach);
+    }
+
+    @GetMapping("/nhan-vien")
+    public ResponseEntity<List<NhanVien>> laydsnhanvien() {
+        List<NhanVien> nhanViens = lichDatService.laydsNhanVien();
+        return ResponseEntity.ok(nhanViens);
+    }
+    @GetMapping("/ca-lam")
+    public ResponseEntity<List<CaLam>> laydscalam() {
+        List<CaLam> caLams = lichDatService.laydsCaLam();
+        return ResponseEntity.ok(caLams);
+    }
+
+    // Xác nhận lịch đặt cho nhân viên
+    @PostMapping("/xac-nhan")
+    public ResponseEntity<String> xacNhanLichDat(@RequestBody XacNhanLichDatRequest request) {
+        return lichDatService.xacNhanLichDat(
+                request.getLichDatId(),
+                request.getNhanVienId(),
+                request.getCaLamIds(), // Chuyển từ 1 ca làm sang danh sách ca làm
+                request.getNgayDat()
+        );
+    }
+
 
 }
