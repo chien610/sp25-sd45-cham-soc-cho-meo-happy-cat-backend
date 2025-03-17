@@ -18,7 +18,11 @@ public interface DichVuChiTietRepository extends JpaRepository<DichVuChiTiet,Lon
     DichVuChiTiet findOneByTenDichVuAndChungLoaiAndHangCan(String tenDichVu, String chungLoai, Integer hangCan);
 
     Page<DichVuChiTiet> findByTenDichVuContainingIgnoreCase(String tenDichVu, Pageable pageable);
+
     Page<DichVuChiTiet> findByLoaiDichVu(LoaiDichVu loaiDichVu, Pageable pageable);
+
+
+
     @Query("SELECT d FROM DichVuChiTiet d WHERE " +
             "(COALESCE(:search, '') = '' OR d.tenDichVu LIKE %:search%) " +
             "AND (COALESCE(:loaiDichVu, '') = '' OR d.loaiDichVu.tenLoaiDichVu = :loaiDichVu) " +

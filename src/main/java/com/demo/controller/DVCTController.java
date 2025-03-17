@@ -87,13 +87,17 @@ public class DVCTController {
     @PostMapping("/add")
     public DichVuChiTiet addDichVuChiTiet(@RequestBody DichVuChiTietDTO dto) {
         // Kiểm tra loại dịch vụ có tồn tại không
-        LoaiDichVu loaiDichVu = loaiDichVuRepository.findByTenLoaiDichVu(dto.getTenLoaiDichVu());
+        List<LoaiDichVu> loaiDichVus = loaiDichVuRepository.findByTenLoaiDichVu(dto.getTenLoaiDichVu());
+        LoaiDichVu loaiDichVu;
 
-        // Nếu chưa tồn tại, tạo mới
-        if (loaiDichVu == null) {
+        if (loaiDichVus.isEmpty()) {
+            // Nếu không tìm thấy, tạo mới loại dịch vụ
             loaiDichVu = new LoaiDichVu();
             loaiDichVu.setTenLoaiDichVu(dto.getTenLoaiDichVu());
-            loaiDichVu = loaiDichVuRepository.save(loaiDichVu); // Lưu vào DB
+            loaiDichVu = loaiDichVuRepository.save(loaiDichVu);
+        } else {
+            // Nếu có nhiều bản ghi, lấy bản ghi đầu tiên
+            loaiDichVu = loaiDichVus.get(0);
         }
 
         // Tạo mới dịch vụ chi tiết
@@ -104,9 +108,11 @@ public class DVCTController {
         dichVuChiTiet.setGia(dto.getGia());
         dichVuChiTiet.setNoiDung(dto.getNoiDung());
         dichVuChiTiet.setLoaiDichVu(loaiDichVu);
+        dichVuChiTiet.setXoa(0); // Đánh dấu chưa bị xóa
 
         return dichVuChiTietRepository.save(dichVuChiTiet);
     }
+
 
     // Cập nhật dịch vụ
     @PutMapping("/update/{id}")
@@ -118,11 +124,17 @@ public class DVCTController {
         }
 
         // Kiểm tra loại dịch vụ có tồn tại không
-        LoaiDichVu loaiDichVu = loaiDichVuRepository.findByTenLoaiDichVu(dto.getTenLoaiDichVu());
-        if (loaiDichVu == null) {
+        List<LoaiDichVu> loaiDichVus = loaiDichVuRepository.findByTenLoaiDichVu(dto.getTenLoaiDichVu());
+        LoaiDichVu loaiDichVu;
+
+        if (loaiDichVus.isEmpty()) {
+            // Nếu không tìm thấy, tạo mới loại dịch vụ
             loaiDichVu = new LoaiDichVu();
             loaiDichVu.setTenLoaiDichVu(dto.getTenLoaiDichVu());
             loaiDichVu = loaiDichVuRepository.save(loaiDichVu);
+        } else {
+            // Nếu có nhiều bản ghi, chọn bản ghi đầu tiên
+            loaiDichVu = loaiDichVus.get(0);
         }
 
         // Cập nhật thông tin dịch vụ chi tiết
@@ -133,8 +145,10 @@ public class DVCTController {
         dichVuChiTiet.setNoiDung(dto.getNoiDung());
         dichVuChiTiet.setLoaiDichVu(loaiDichVu);
 
+        // Lưu lại dịch vụ chi tiết và trả về kết quả
         return ResponseEntity.ok(dichVuChiTietRepository.save(dichVuChiTiet));
     }
+
 
 
     // Xóa dịch vụ (đánh dấu xóa thay vì xóa khỏi DB)

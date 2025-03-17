@@ -1,12 +1,15 @@
 package com.demo.sevice;
 
 import com.demo.dto.HoaDonDTO;
+import com.demo.entity.HoaDon;
 import com.demo.repo.HoaDonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class HoaDonService {
@@ -29,5 +32,12 @@ HoaDonRepository hoaDonRepository;
                         hoaDon.getKhuyenMai() != null ? hoaDon.getKhuyenMai().getPhanTramGiam() : null
                 )
         );
+    }
+
+    public List<HoaDon> timKiemHoaDon(String soDienThoai, String phuongThucThanhToan) {
+        if (phuongThucThanhToan != null && !phuongThucThanhToan.isEmpty()) {
+            return hoaDonRepository.findBySoDienThoaiAndPhuongThucThanhToan(soDienThoai, phuongThucThanhToan);
+        }
+        return hoaDonRepository.findByKhachHangSoDienThoai(soDienThoai);
     }
 }

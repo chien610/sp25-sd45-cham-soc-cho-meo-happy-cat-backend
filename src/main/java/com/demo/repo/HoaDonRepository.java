@@ -21,4 +21,13 @@ public interface HoaDonRepository extends JpaRepository<HoaDon,Integer> {
     Page<HoaDonDTO> findBySoDienThoaiContaining(@Param("search") String search, Pageable pageable);
 
     Page<HoaDon> findAll(Pageable pageable);
+
+    @Query("SELECT hd FROM HoaDon hd WHERE hd.khachHang.soDienThoai = :soDienThoai")
+    List<HoaDon> findByKhachHangSoDienThoai(@Param("soDienThoai") String soDienThoai);
+
+    @Query("SELECT hd FROM HoaDon hd WHERE hd.khachHang.soDienThoai = :soDienThoai AND hd.phuongThucThanhToan = :phuongThuc")
+    List<HoaDon> findBySoDienThoaiAndPhuongThucThanhToan(
+            @Param("soDienThoai") String soDienThoai,
+            @Param("phuongThuc") String phuongThuc
+    );
 }

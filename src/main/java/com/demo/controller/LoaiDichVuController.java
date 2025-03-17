@@ -6,10 +6,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
 @CrossOrigin(origins = "http://localhost:4200")
@@ -18,58 +21,59 @@ import java.util.Optional;
 @RequestMapping("/api/loai-dich-vu")
 public class LoaiDichVuController {
     @Autowired
-    private final LoaiDichVuRepostory loaiDichVuRepository;
+    LoaiDichVuRepostory loaiDichVuRepository;
 
-    public LoaiDichVuController(LoaiDichVuRepostory loaiDichVuRepository) {
-        this.loaiDichVuRepository = loaiDichVuRepository;
-    }
 
     // Lấy danh sách tất cả loại dịch vụ (có phân trang)
-    @GetMapping
-    public Page<LoaiDichVu> getAllLoaiDichVu(@RequestParam(defaultValue = "0") int page) {
-        Pageable pageable = PageRequest.of(page, 5); // 5 dòng mỗi trang
-        return loaiDichVuRepository.findAll(pageable);
-    }
+    @GetMapping("/list")
+    public Page<LoaiDichVu> hienthi(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size,
+            @RequestParam(required = false) String search)
+    {
 
-    // Lấy loại dịch vụ theo ID
-    @GetMapping("/{id}")
-    public ResponseEntity<LoaiDichVu> getLoaiDichVuById(@PathVariable Long id) {
-        Optional<LoaiDichVu> loaiDichVu = loaiDichVuRepository.findById(id);
-        return loaiDichVu.map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
+        Pageable pageable = PageRequest.of(page, size);
 
-    // Tìm kiếm loại dịch vụ theo tên (có phân trang)
-    @GetMapping("/search")
-    public Page<LoaiDichVu> searchLoaiDichVu(@RequestParam String keyword,
-                                             @RequestParam(defaultValue = "0") int page) {
-        Pageable pageable = PageRequest.of(page, 5); // 5 dòng mỗi trang
-        return loaiDichVuRepository.findByTenLoaiDichVuContainingIgnoreCase(keyword, pageable);
-    }
+            if (search != null && !search.isEmpty()) {
+                return loaiDichVuRepository.findByTenLoaiDichVuAndXoa("%" + search + "%", 0, pageable);
+            }
 
-    // Thêm mới loại dịch vụ
-    @PostMapping
-    public LoaiDichVu createLoaiDichVu(@RequestBody LoaiDichVu loaiDichVu) {
-        return loaiDichVuRepository.save(loaiDichVu);
+        return loaiDichVuRepository.findAllActive(pageable);
+    }
+    @PostMapping("/add")
+    public ResponseEntity<LoaiDichVu> addLoaiDichVu(@RequestBody LoaiDichVu loaiDichVu) {
+            if (loaiDichVu.getXoa() == null) {
+                loaiDichVu.setXoa(0); // Đặt giá trị mặc định là 0
+            }
+
+        LoaiDichVu newLoaiDichVu = loaiDichVuRepository.save(loaiDichVu);
+
+        return ResponseEntity.ok(newLoaiDichVu);
     }
 
     // Cập nhật loại dịch vụ
-    @PutMapping("/{id}")
-    public ResponseEntity<LoaiDichVu> updateLoaiDichVu(@PathVariable Long id, @RequestBody LoaiDichVu loaiDichVuDetails) {
-        return loaiDichVuRepository.findById(id).map(loaiDichVu -> {
-            loaiDichVu.setTenLoaiDichVu(loaiDichVuDetails.getTenLoaiDichVu());
-            loaiDichVu.setXoa(loaiDichVuDetails.getXoa());
-            return ResponseEntity.ok(loaiDichVuRepository.save(loaiDichVu));
-        }).orElseGet(() -> ResponseEntity.notFound().build());
+    @PutMapping("/update/{id}")
+    public ResponseEntity<?> updateLoaiDichVu(@PathVariable Long id, @RequestBody LoaiDichVu loaiDichVuDetails) {
+        Optional<LoaiDichVu> optionalLoaiDichVu = loaiDichVuRepository.findById(id);
+
+        if (!optionalLoaiDichVu.isPresent()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Collections.singletonMap("message", "Không tìm thấy loại dịch vụ"));
+        }
+
+        LoaiDichVu ldv = optionalLoaiDichVu.get();
+        ldv.setTenLoaiDichVu(loaiDichVuDetails.getTenLoaiDichVu());
+
+        return ResponseEntity.ok(loaiDichVuRepository.save(ldv));
     }
 
     // Xóa loại dịch vụ (cập nhật trạng thái xóa thay vì xóa khỏi DB)
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Object> deleteLoaiDichVu(@PathVariable Long id) {
-        return loaiDichVuRepository.findById(id).map(loaiDichVu -> {
-            loaiDichVu.setXoa(1); // Đánh dấu đã xóa
-            loaiDichVuRepository.save(loaiDichVu);
-            return ResponseEntity.ok().build();
-        }).orElseGet(() -> ResponseEntity.notFound().build());
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<?> deleteLoaiDichVu(@PathVariable Long id) {
+        return loaiDichVuRepository.findById(id).map(kh -> {
+            kh.setXoa(1);
+            loaiDichVuRepository.save(kh);
+            return ResponseEntity.ok(Map.of("message", "Xóa loại dich vụ thành công")); // Trả về JSON
+        }).orElseGet(() -> ResponseEntity.badRequest().body(Map.of("m+essage", "Không tìm thấy loại dịch vụ")));
     }
 }

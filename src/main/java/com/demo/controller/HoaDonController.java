@@ -1,11 +1,14 @@
 package com.demo.controller;
 
 import com.demo.dto.HoaDonDTO;
+import com.demo.entity.HoaDon;
 import com.demo.sevice.HoaDonService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @CrossOrigin(origins = "http://localhost:4200")
 @RestController
@@ -22,5 +25,13 @@ public class HoaDonController {
             @RequestParam(required = false) String search) {
 
         return hoaDonService.getHoaDonList(page, size, search);
+    }
+
+    @GetMapping("/tim-kiem")
+    public List<HoaDon> timKiemHoaDon(
+            @RequestParam String soDienThoai,
+            @RequestParam(required = false) String phuongThucThanhToan
+    ) {
+        return hoaDonService.timKiemHoaDon(soDienThoai, phuongThucThanhToan);
     }
 }
