@@ -15,29 +15,9 @@ import java.util.List;
 public class HoaDonService {
 @Autowired
 HoaDonRepository hoaDonRepository;
-    public Page<HoaDonDTO> getHoaDonList(int page, int size, String search) {
+    public Page<HoaDonDTO> getHoaDonList(int page, int size, String soDienThoai, String phuongThucThanhToan) {
         Pageable pageable = PageRequest.of(page, size);
-        if (search != null && !search.isEmpty()) {
-            return hoaDonRepository.findBySoDienThoaiContaining(search, pageable);
-        }
-        return hoaDonRepository.findAll(pageable).map(hoaDon ->
-                new HoaDonDTO(
-                        hoaDon.getId(),
-                        hoaDon.getNgayLap(),
-                        hoaDon.getTongTien(),
-                        hoaDon.getPhuongThucThanhToan(),
-                        hoaDon.getKhachHang().getSoDienThoai(),
-                        hoaDon.getNhanVien().getId(),
-                        hoaDon.getKhuyenMai() != null ? hoaDon.getKhuyenMai().getMaKM() : null,
-                        hoaDon.getKhuyenMai() != null ? hoaDon.getKhuyenMai().getPhanTramGiam() : null
-                )
-        );
+        return hoaDonRepository.searchHoaDon(soDienThoai, phuongThucThanhToan, pageable);
     }
 
-    public List<HoaDon> timKiemHoaDon(String soDienThoai, String phuongThucThanhToan) {
-        if (phuongThucThanhToan != null && !phuongThucThanhToan.isEmpty()) {
-            return hoaDonRepository.findBySoDienThoaiAndPhuongThucThanhToan(soDienThoai, phuongThucThanhToan);
-        }
-        return hoaDonRepository.findByKhachHangSoDienThoai(soDienThoai);
-    }
 }

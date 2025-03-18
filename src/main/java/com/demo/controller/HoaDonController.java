@@ -17,21 +17,13 @@ public class HoaDonController {
     @Autowired
     HoaDonService hoaDonService;
 
-
     @GetMapping("/list")
     public Page<HoaDonDTO> getHoaDonList(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size,
-            @RequestParam(required = false) String search) {
+            @RequestParam(required = false) String soDienThoai,
+            @RequestParam(required = false) String phuongThucThanhToan) {
 
-        return hoaDonService.getHoaDonList(page, size, search);
-    }
-
-    @GetMapping("/tim-kiem")
-    public List<HoaDon> timKiemHoaDon(
-            @RequestParam String soDienThoai,
-            @RequestParam(required = false) String phuongThucThanhToan
-    ) {
-        return hoaDonService.timKiemHoaDon(soDienThoai, phuongThucThanhToan);
+        return hoaDonService.getHoaDonList(page, size, soDienThoai, phuongThucThanhToan);
     }
 }
